@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Sequence
@@ -46,6 +47,7 @@ class IAMDataset(Dataset):
         annotation_file: str | Path | None = None,
         split_file: str | Path | None = None,
         level: str = "lines",
+        image_dir: str | Path | None = None,
         image_height: int = 64,
         image_width: int | None = None,
         mean: float = 0.5,
@@ -56,6 +58,7 @@ class IAMDataset(Dataset):
     ) -> None:
         self.root_dir = Path(root_dir)
         self.level = level
+        self.image_dir = Path(image_dir) if image_dir is not None else None
         self.image_height = image_height
         self.image_width = image_width
         self.mean = mean
@@ -134,6 +137,9 @@ class IAMDataset(Dataset):
     def _parse_annotations(
         self, split_ids: set[str] | None, skip_bad_samples: bool
     ) -> list[IAMSample]:
+        if self.annotation_file.suffix.lower() == ".csv":
+            return self._parse_csv_annotations(split_ids, skip_bad_samples)
+
         samples: list[IAMSample] = []
         with self.annotation_file.open("r", encoding="utf-8") as file:
             for raw_line in file:
@@ -152,6 +158,42 @@ class IAMDataset(Dataset):
                     raise FileNotFoundError(f"IAM image not found: {sample.image_path}")
                 samples.append(sample)
         return samples
+
+    def _parse_csv_annotations(
+        self, split_ids: set[str] | None, skip_bad_samples: bool
+    ) -> list[IAMSample]:
+        image_dir = self.image_dir or self.root_dir
+        samples: list[IAMSample] = []
+
+        with self.annotation_file.open("r", encoding="utf-8", newline="") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                image_name = self._first_present(row, ("Images", "image", "filename"))
+                text = self._first_present(row, ("Text", "text", "label"))
+                if image_name is None or text is None:
+                    raise ValueError(
+                        "CSV annotations must include image and text columns, "
+                        'for example "Images,Text"'
+                    )
+
+                image_path = image_dir / image_name
+                sample_id = Path(image_name).stem
+                if split_ids is not None and sample_id not in split_ids:
+                    continue
+                if not image_path.exists():
+                    if skip_bad_samples:
+                        continue
+                    raise FileNotFoundError(f"Image not found: {image_path}")
+                samples.append(IAMSample(sample_id=sample_id, image_path=image_path, text=text))
+
+        return samples
+
+    @staticmethod
+    def _first_present(row: dict[str, str], keys: Sequence[str]) -> str | None:
+        for key in keys:
+            if key in row:
+                return row[key]
+        return None
 
     def _parse_annotation_line(
         self, line: str, skip_bad_samples: bool

@@ -30,5 +30,16 @@ label_lengths = batch["label_lengths"]
 logits = model(images)
 ```
 
+## Training
+
+```bash
+python3 train.py --data-root data/iam --epochs 20 --batch-size 16
+```
+
+If `data/iam/Train_Label.csv`, `data/iam/Test_Label.csv`, `data/iam/Train_Set`,
+and `data/iam/Test_Set` exist, the script uses them automatically.
+
+Use `--train-split` and `--val-split` if you want separate IAM split files.
+
 Character id `0` is reserved for the CTC blank token. Dataset labels contain
 only real character ids, starting at `1`.
