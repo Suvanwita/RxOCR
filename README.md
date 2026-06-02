@@ -41,5 +41,11 @@ and `data/iam/Test_Set` exist, the script uses them automatically.
 
 Use `--train-split` and `--val-split` if you want separate IAM split files.
 
+## Inference
+
+```bash
+python3 inference.py path/to/image.jpg --checkpoint checkpoints/best_crnn.pt
+```
+
 Character id `0` is reserved for the CTC blank token. Dataset labels contain
 only real character ids, starting at `1`.
