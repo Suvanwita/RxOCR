@@ -17,14 +17,17 @@ data/iam/
 ```python
 from torch.utils.data import DataLoader
 from src.data_loader import IAMDataset, iam_collate_fn
+from src.model import CRNN
 
 dataset = IAMDataset(root_dir="data/iam", level="lines", image_height=64)
 loader = DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=iam_collate_fn)
+model = CRNN(num_classes=dataset.num_classes)
 
 batch = next(iter(loader))
 images = batch["images"]
 labels = batch["labels"]
 label_lengths = batch["label_lengths"]
+logits = model(images)
 ```
 
 Character id `0` is reserved for the CTC blank token. Dataset labels contain
