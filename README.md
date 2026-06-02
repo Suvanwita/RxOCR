@@ -47,5 +47,11 @@ Use `--train-split` and `--val-split` if you want separate IAM split files.
 python3 inference.py path/to/image.jpg --checkpoint checkpoints/best_crnn.pt
 ```
 
+## Streamlit App
+
+```bash
+streamlit run app.py
+```
+
 Character id `0` is reserved for the CTC blank token. Dataset labels contain
 only real character ids, starting at `1`.

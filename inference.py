@@ -46,15 +46,23 @@ def resize_image(image: Image.Image, image_height: int) -> Image.Image:
     return image.resize((new_width, image_height), Image.BILINEAR)
 
 
-def preprocess_image(
-    image_path: Path, image_height: int, mean: float, std: float
-) -> tuple[torch.Tensor, int]:
-    image = Image.open(image_path).convert("L")
+def preprocess_pil_image(
+    image: Image.Image, image_height: int, mean: float, std: float
+) -> tuple[torch.Tensor, int, Image.Image]:
+    image = image.convert("L")
     image = resize_image(image, image_height)
     image_tensor = torch.from_numpy(np.array(image, dtype="float32")).unsqueeze(0)
     image_tensor = image_tensor / 255.0
     image_tensor = (image_tensor - mean) / std
-    return image_tensor.unsqueeze(0), image_tensor.shape[-1]
+    return image_tensor.unsqueeze(0), image_tensor.shape[-1], image
+
+
+def preprocess_image(
+    image_path: Path, image_height: int, mean: float, std: float
+) -> tuple[torch.Tensor, int]:
+    image = Image.open(image_path)
+    image_tensor, image_width, _ = preprocess_pil_image(image, image_height, mean, std)
+    return image_tensor, image_width
 
 
 def greedy_ctc_decode(
@@ -120,4 +128,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
